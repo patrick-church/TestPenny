@@ -1,7 +1,4 @@
-import numpy as np
-import random
-import os
-import json
+
 
 def game_simulation_with_probabilities(rounds=1000, total_cards=False, data_file='game_data.json', deck_file='deck_history.json', win_counts_file='win_counts.json'):
     
