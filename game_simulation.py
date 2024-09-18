@@ -1,5 +1,10 @@
 
 
+import os
+import numpy as np
+import json
+import random
+
 def game_simulation_with_probabilities(rounds=1000, total_cards=False, data_file='game_data.json', deck_file='deck_history.json', win_counts_file='win_counts.json'):
     
     def create_hands():
@@ -64,24 +69,49 @@ def game_simulation_with_probabilities(rounds=1000, total_cards=False, data_file
         return win_matrix, player1_wins, player2_wins
 
     # Load data file if it exists, otherwise initialize empty win matrix and rounds played count
+    # Load data with detailed sequence combinations
     def load_data(file):
         if os.path.exists(file):
             with open(file, 'r') as f:
                 data = json.load(f)
-                win_matrix = np.array(data['win_matrix'])
+                win_matrix = np.zeros((8, 8))  # Initialize empty matrix
+                win_data = data['win_data']
                 total_rounds_played = data['total_rounds_played']
+            
+            # Rebuild the matrix from the stored win data
+                sequences = create_hands()
+                for i in range(len(sequences)):
+                    for j in range(len(sequences)):
+                        p1_seq = binary_to_string(sequences[i])
+                        p2_seq = binary_to_string(sequences[j])
+                        combo_key = f"{p1_seq} vs {p2_seq}"
+                        if combo_key in win_data:
+                            win_matrix[i, j] = win_data[combo_key]  # Populate the matrix
+
                 return win_matrix, total_rounds_played
         else:
             return np.zeros((8, 8)), 0
+        
+    def save_data(file, win_matrix, sequences, total_rounds_played):
+        win_data = {}
+    
+    # Loop through each combination of Player 1 and Player 2 sequences
+        for i in range(len(sequences)):
+            for j in range(len(sequences)):
+                p1_seq = binary_to_string(sequences[i])
+                p2_seq = binary_to_string(sequences[j])
+                wins = win_matrix[i, j]  # Number of wins for this combination
+                win_data[f"{p1_seq} vs {p2_seq}"] = int(wins)  # Store as a human-readable key
 
-    # Save updated win matrix and total rounds played back to the file
-    def save_data(file, win_matrix, total_rounds_played):
+    # Prepare the data to be saved
+        data = {
+            'win_data': win_data,  # Detailed win data
+            'total_rounds_played': total_rounds_played  # Total number of games
+        }
+
+    # Save to JSON file
         with open(file, 'w') as f:
-            data = {
-                'win_matrix': win_matrix.tolist(),
-                'total_rounds_played': total_rounds_played
-            }
-            json.dump(data, f)
+            json.dump(data, f, indent=4)
 
     # Load deck history if it exists, otherwise initialize an empty list
     def load_deck_history(deck_file):
@@ -135,7 +165,7 @@ def game_simulation_with_probabilities(rounds=1000, total_cards=False, data_file
     total_rounds_played += rounds
 
     # Save the updated win matrix, total rounds played, deck history, and win counts
-    save_data(data_file, overall_win_matrix, total_rounds_played)
+    save_data(data_file, overall_win_matrix, sequences, total_rounds_played)
     save_deck_history(deck_file, deck_history)
     save_win_counts(win_counts_file, player1_wins, player2_wins)
 
@@ -158,4 +188,4 @@ def game_simulation_with_probabilities(rounds=1000, total_cards=False, data_file
 
 
 # Example usage:
-game_simulation_with_probabilities(rounds=50000, total_cards=False)
+game_simulation_with_probabilities(rounds=2000, total_cards=False)
